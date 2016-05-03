@@ -2,11 +2,11 @@
 # used some from advanced script to have multiple ports: use an equal number of guest and host ports
 
 # Update the following variables to fit your setup
-Guest_name=lxcNetworkDefault
+Guest_name=kvmNetworkDefault
 Host_ipaddr=10.0.0.1
-Guest_ipaddr=192.168.122.2
-Host_port=('11234' '16379' '15201' '12865' '12866')
-Guest_port=('1234' '6379' '5201' '2865' '12866')
+Guest_ipaddr=192.168.122.3
+Host_port=('21234' '26379' '25201' '22865' '22866')
+Guest_port=('1234' '6379' '5201' '2865' '22866')
 
 length=$(( ${#Host_port[@]} - 1 ))
 if [ "${1}" = "${Guest_name}" ]; then
