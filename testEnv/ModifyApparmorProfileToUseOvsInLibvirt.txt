@@ -1,0 +1,22 @@
+Profile of apparmor didn't allow libvirtd to excute programs in /usr/local/bin, which is the default directory contains the "ovs-vsctl".
+
+So we must modify the profile mannually to let libvirt work with ovs.
+
+(1) sudo gedit /etc/apparmor.d/usr.sbin.libvirtd
+(2) find lines of:
+```
+  /bin/* PUx,
+  /sbin/* PUx,
+  /usr/bin/* PUx,
+  /usr/sbin/* PUx,
+```
+(3) insert these two lines (notice ovs-vsctl is contained in /usr/local/bin):
+```
+  /usr/local/bin/* PUx,
+  /usr/local/sbin/* PUx,
+```
+(4) save and exit gedit
+(5) reload the profile with the command:
+sudo /etc/init.d/apparmor reload
+
+Now, I can successfully start VMs connected to an ovs bridge!

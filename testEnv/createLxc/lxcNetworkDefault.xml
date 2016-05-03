@@ -1,0 +1,15 @@
+<domain type='lxc'>
+	<name>lxcNetworkDefault</name>
+	<memory>102400</memory>
+	<os>
+		<type>exe</type>
+		<init>/bin/bash</init>
+	</os>
+	<devices>
+		<emulator>/usr/lib/libvirt/libvirt_lxc</emulator>
+		<interface type="network">
+			<source network='default' />		
+		</interface>
+		<console type='pty' />		
+	</devices>
+</domain>
