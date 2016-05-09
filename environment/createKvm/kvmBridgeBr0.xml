@@ -20,10 +20,11 @@
     <emulator>/usr/bin/kvm-spice</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/testUbuntu-clone.img'/>
+      <source file='/var/lib/libvirt/images/kvmBridgeBr0.img'/>
       <target dev='vda' bus='virtio'/>
     </disk>
     <interface type="bridge">
+      <model type='virtio'/>
       <source bridge='br0' />		
     </interface>
     <serial type='pty'>

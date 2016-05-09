@@ -1,5 +1,5 @@
 <domain type='kvm'>
-  <name>kvmBridgeOvsbr0</name>
+  <name>kvmNetworkDefault</name>
   <memory unit='KiB'>1048576</memory>
   <currentMemory unit='KiB'>1048576</currentMemory>
   <vcpu placement='static'>1</vcpu>
@@ -20,12 +20,12 @@
     <emulator>/usr/bin/kvm-spice</emulator>
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/var/lib/libvirt/images/testUbuntu-clone.img'/>
+      <source file='/var/lib/libvirt/images/kvmNetworkDefault.img'/>
       <target dev='vda' bus='virtio'/>
     </disk>
-    <interface type="bridge">
-      <source bridge='ovsbr0' />
-      <virtualport type='openvswitch'/>
+    <interface type="network">
+      <model type='virtio'/>
+      <source network='default' />		
     </interface>
     <serial type='pty'>
       <target port='0'/>

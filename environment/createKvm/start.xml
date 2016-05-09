@@ -24,6 +24,7 @@
       <target dev='vda' bus='virtio'/>
     </disk>
     <interface type="network">
+      <model type='virtio'/>
       <source network='default' />		
     </interface>
     <serial type='pty'>

@@ -1,6 +1,7 @@
 <domain type='lxc'>
 	<name>lxcNetworkDefault</name>
-	<memory>102400</memory>
+	<memory>1048576</memory>
+	<vcpu placement='static' cpuset='1'>1</vcpu>
 	<os>
 		<type>exe</type>
 		<init>/bin/bash</init>
