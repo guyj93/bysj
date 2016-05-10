@@ -1,0 +1,3 @@
+[submodule "testTools/netLatencyTester"]
+	path = testTools/netLatencyTester
+	url = https://github.com/guyj93/netLatencyTester.git
