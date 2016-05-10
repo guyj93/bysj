@@ -1,3 +1,14 @@
+# Port mapping hooks
+We can use these hooks to do port mapping for VMs in NAT network.
+(1) Check and correct the IPs and ports in the hooks
+(2) Copy these hooks into /etc/libvirt/hooks
+(3) Restart the libvirtd process by run
+```
+/etc/init.d/libvirt-bin restart
+```
+or just roughly kill the libvirtd process and normally it will restart.
+
+# Use Open vSwitch with libvirt on Ubuntu
 Profile of apparmor didn't allow libvirtd to excute programs in /usr/local/bin, which is the default directory contains the "ovs-vsctl".
 
 So we must modify the profile mannually to let libvirt work with ovs.
@@ -19,4 +30,5 @@ So we must modify the profile mannually to let libvirt work with ovs.
 (5) reload the profile with the command:
 sudo /etc/init.d/apparmor reload
 
-Now, I can successfully start VMs connected to an ovs bridge!
+Now, we can successfully start VMs connected to an ovs bridge!
+
