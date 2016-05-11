@@ -19,7 +19,7 @@ if [ $# -ge "3" ]; then
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/`date -I'minutes'`
+	resultPath=results/basic/`date -I'minutes'`
 	mkdir -p $resultPath
 	cd $resultPath
 
@@ -54,7 +54,9 @@ if [ $# -ge "3" ]; then
 	cd ..
 	
 	cd $pwd
+	echo "-----finish-----"
+	echo "The result is stored in ${resultPath}."
 else
-	echo "usage: dotest.sh local_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
+	echo "usage: basicTest.sh local_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
 	echo "Normally local_IP==lxcNetworkDefault_IP==kvmNetworkDefault_IP, so optionaly give them."
 fi
