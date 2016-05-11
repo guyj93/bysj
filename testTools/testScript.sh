@@ -19,6 +19,7 @@ if [ $# -eq "5" ]; then
 	iperf3 -c $serverAddr -p $iperfPort > "${pwd}/${serverAddr}_${iperfPort}_iperf.txt";
 
 	echo "start redis-benchmark"
+	redis-cli -h $serverAddr -p $redisPort flushall > /dev/null
 	redis-benchmark -h $serverAddr -p $redisPort --csv > "${pwd}/${serverAddr}_${redisPort}_redis.txt";
 
 	echo "start testChangeRequestSize"
