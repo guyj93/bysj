@@ -19,7 +19,7 @@ if [ $# -ge "3" ]; then
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/basic/`date -I'minutes'`
+	resultPath=results/basic/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
 

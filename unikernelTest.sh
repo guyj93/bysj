@@ -6,7 +6,7 @@ if [ $# -eq "1" ]; then
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/unikernel/`date -I'minutes'`
+	resultPath=results/unikernel/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
 

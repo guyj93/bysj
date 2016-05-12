@@ -7,7 +7,7 @@ if [ $# -eq "2" ]; then
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/ovs/$(date -I'minutes')
+	resultPath=results/ovs/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
 
