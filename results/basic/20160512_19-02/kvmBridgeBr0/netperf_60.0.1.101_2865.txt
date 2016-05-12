@@ -1,0 +1,8 @@
+MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 60.0.1.101 () port 2866 AF_INET : first burst 0
+Local /Remote
+Socket Size   Request Resp.  Elapsed Trans.   CPU    CPU    S.dem   S.dem
+Send   Recv   Size    Size   Time    Rate     local  remote local   remote
+bytes  bytes  bytes   bytes  secs.   per sec  % S    % S    us/Tr   us/Tr
+
+16384  87380  100     200    60.00   4079.78  17.15  13.32  1008.907  32.648 
+16384  87380 
