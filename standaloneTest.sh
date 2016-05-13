@@ -5,16 +5,16 @@ if [ $# -ge "2" ]; then
 	testName=$1
 	remote_IP=$2
 	
-	if [ $# -ge "6"]; then
+	if [ $# -ge "6" ]; then
 		netperf_port=$3
 		iperf3_port=$4
 		redis_port=$5
-		netLatencyTester=$6
+		netLatencyTester_port=$6
 	else
 		netperf_port="2865"
 		iperf3_port="5201"
 		redis_port="6379"
-		netLatencyTester="1234"
+		netLatencyTester_port="1234"
 	fi
 	
 	pwd=$(pwd)
