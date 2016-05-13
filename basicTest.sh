@@ -1,27 +1,31 @@
 # exit when use unset variable
 set -u
 
-if [ $# -ge "3" ]; then
-	local_IP=$1
-	lxcBridgeBr0_IP=$2
-	kvmBridgeBr0_IP=$3
+if [ $# -ge "4" ]; then
+	testName=$1
+	local_IP=$2
+	lxcBridgeBr0_IP=$3
+	kvmBridgeBr0_IP=$4
 
-	if [ $# -ge "4" ]; then
-		lxcNetworkDefault_IP=$4
+	if [ $# -ge "5" ]; then
+		lxcNetworkDefault_IP=$5
 	else
 		lxcNetworkDefault_IP=$local_IP
 	fi
-	if [ $# -ge "5" ]; then
-		kvmNetworkDefault_IP=$5
+	if [ $# -ge "6" ]; then
+		kvmNetworkDefault_IP=$6
 	else
 		kvmNetworkDefault_IP=$local_IP
 	fi
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/basic/$(date +'%Y%m%d_%H-%M')
+	resultPath=results/${testName}/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
+	if [ $? -ne "0" ]; then
+		exit
+	fi
 
 	echo "-----local-----"
 	mkdir -p local
@@ -57,6 +61,6 @@ if [ $# -ge "3" ]; then
 	echo "-----finish-----"
 	echo "The result is stored in ${resultPath}."
 else
-	echo "usage: basicTest.sh local_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
+	echo "usage: basicTest.sh testName local_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
 	echo "Normally local_IP==lxcNetworkDefault_IP==kvmNetworkDefault_IP, so optionaly give them."
 fi

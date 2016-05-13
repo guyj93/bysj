@@ -1,14 +1,18 @@
 # exit when use unset variable
 set -u
 
-if [ $# -eq "1" ]; then
-	osvBridgeBr0_IP=$1
+if [ $# -ge "2" ]; then
+	testName=$1
+	osvBridgeBr0_IP=$2
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/unikernel/$(date +'%Y%m%d_%H-%M')
+	resultPath=results/${testName}/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
+	if [ $? -ne "0" ]; then
+		exit
+	fi
 
 	echo "-----osvBridgeBr0-----"
 	mkdir -p osvBridgeBr0
@@ -20,5 +24,5 @@ if [ $# -eq "1" ]; then
 	echo "-----finish-----"
 	echo "The result is stored in ${resultPath}."
 else
-	echo "usage: unikernelTest.sh osvBridgeBr0_IP"
+	echo "usage: unikernelTest.sh testName osvBridgeBr0_IP"
 fi

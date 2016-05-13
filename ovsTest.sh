@@ -1,15 +1,19 @@
 # exit when use unset variable
 set -u
 
-if [ $# -eq "2" ]; then
-	lxcBridgeOvsbr0_IP=$1
-	kvmBridgeOvsbr0_IP=$2
+if [ $# -ge "3" ]; then
+	testName=$1
+	lxcBridgeOvsbr0_IP=$2
+	kvmBridgeOvsbr0_IP=$3
 	
 	pwd=$(pwd)
 	scriptPath=$(cd $(dirname "${BASH_SOURCE[0]}");pwd;)
-	resultPath=results/ovs/$(date +'%Y%m%d_%H-%M')
+	resultPath=results/${testName}/$(date +'%Y%m%d_%H-%M')
 	mkdir -p $resultPath
 	cd $resultPath
+	if [ $? -ne "0" ]; then
+		exit
+	fi
 
 	echo "-----lxcBridgeOvsbr0-----"
 	mkdir -p lxcBridgeOvsbr0
@@ -27,5 +31,5 @@ if [ $# -eq "2" ]; then
 	echo "-----finish-----"
 	echo "The result is stored in ${resultPath}."
 else
-	echo "usage: ovsTest.sh lxcBridgeOvsbr0_IP kvmBridgeOvsbr0_IP"
+	echo "usage: ovsTest.sh testName lxcBridgeOvsbr0_IP kvmBridgeOvsbr0_IP"
 fi
