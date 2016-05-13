@@ -17,7 +17,7 @@ if [ $# -ge "2" ]; then
 	echo "-----osvBridgeBr0-----"
 	mkdir -p osvBridgeBr0
 	cd osvBridgeBr0
-	${scriptPath}/testTools/testScript.sh $osvBridgeBr0_IP 2865 5201 6379 1234
+	${scriptPath}/testTools/testScript.sh $osvBridgeBr0_IP 12865 5201 6379 1234
 	cd ..
 	
 	cd $pwd
