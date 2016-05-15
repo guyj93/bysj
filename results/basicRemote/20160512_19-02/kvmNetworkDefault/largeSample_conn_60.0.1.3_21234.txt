@@ -1,3 +1,0 @@
-1
-ConnID	NumResp	StartTime	StopTime	Error
-0 	 100000 	 2016-05-12 19:17:18.363379187 +0800 CST 	 2016-05-12 19:18:58.364157396 +0800 CST 	 <nil>
