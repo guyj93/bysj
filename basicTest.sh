@@ -3,19 +3,19 @@ set -u
 
 if [ $# -ge "4" ]; then
 	testName=$1
-	local_IP=$2
+	physical_IP=$2
 	lxcBridgeBr0_IP=$3
 	kvmBridgeBr0_IP=$4
 
 	if [ $# -ge "5" ]; then
 		lxcNetworkDefault_IP=$5
 	else
-		lxcNetworkDefault_IP=$local_IP
+		lxcNetworkDefault_IP=$physical_IP
 	fi
 	if [ $# -ge "6" ]; then
 		kvmNetworkDefault_IP=$6
 	else
-		kvmNetworkDefault_IP=$local_IP
+		kvmNetworkDefault_IP=$physical_IP
 	fi
 	
 	pwd=$(pwd)
@@ -27,10 +27,10 @@ if [ $# -ge "4" ]; then
 		exit
 	fi
 
-	echo "-----local-----"
-	mkdir -p local
-	cd local
-	${scriptPath}/testTools/testScript.sh $local_IP 2865 5201 6379 1234
+	echo "-----physical-----"
+	mkdir -p physical
+	cd physical
+	${scriptPath}/testTools/testScript.sh $physical_IP 2865 5201 6379 1234
 	cd ..
 
 	echo "-----lxcNetworkDefault-----"
@@ -61,6 +61,6 @@ if [ $# -ge "4" ]; then
 	echo "-----finish-----"
 	echo "The result is stored in ${resultPath}."
 else
-	echo "usage: basicTest.sh testName local_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
-	echo "Normally local_IP==lxcNetworkDefault_IP==kvmNetworkDefault_IP, so optionaly give them."
+	echo "usage: basicTest.sh testName physical_IP lxcBridgeBr0_IP kvmBridgeBr0_IP [lxcNetworkDefault_IP] [kvmNetworkDefault_IP]"
+	echo "Normally physical_IP==lxcNetworkDefault_IP==kvmNetworkDefault_IP, so optionaly give them."
 fi
