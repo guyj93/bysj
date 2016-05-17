@@ -15,21 +15,21 @@ import (
 
 type Table struct {
 	Name      string
-	MergeFunc func(location, deployment, path string, to io.Writer) error
+	MergeFunc func(location, test, time, deployment, path string, to io.Writer) error
 	fp        *os.File
 	bw        *bufio.Writer
 	lock      sync.Mutex
 }
 
-func (t *Table) Merge(location, deployment, path string) error {
+func (t *Table) Merge(location, test, time, deployment, path string) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	return t.MergeFunc(location, deployment, path, t.bw)
+	return t.MergeFunc(location, test, time, deployment, path, t.bw)
 }
 
 func NewTable(
 	name string,
-	mergeFunc func(location, deployment, path string, to io.Writer) error,
+	mergeFunc func(location, test, time, deployment, path string, to io.Writer) error,
 ) *Table {
 	return &Table{
 		Name:      name,
@@ -73,8 +73,9 @@ func (p TableSlice) Swap(i, j int) {
 	p[i], p[j] = p[j], p[i]
 }
 
-func MergeResults(resultsDir, mergedResultsDir string, locations []string, deployments []string, tables []*Table) {
+func MergeResults(resultsDir, mergedResultsDir string, locations, tests, deployments []string, tables []*Table) {
 	sort.Sort(sort.Reverse(StringSlice(locations)))
+	sort.Sort(sort.Reverse(StringSlice(tests)))
 	sort.Sort(sort.Reverse(StringSlice(deployments)))
 	sort.Sort(sort.Reverse(TableSlice(tables)))
 
@@ -110,15 +111,28 @@ func MergeResults(resultsDir, mergedResultsDir string, locations []string, deplo
 		if info.IsDir() {
 			return nil
 		}
+		file := filepath.Base(path)
+		tmp := filepath.Dir(path)
+		deployment := filepath.Base(tmp)
+		tmp = filepath.Dir(tmp)
+		timestamp := filepath.Base(tmp)
+		tmp = filepath.Dir(tmp)
+		testAndLocation := filepath.Base(tmp)
+
 		for _, l := range locations {
-			if strings.Contains(path, l) {
-				for _, d := range deployments {
-					if strings.Contains(path, d) {
-						for _, t := range tables {
-							if strings.Contains(filepath.Base(path), t.Name) {
-								fmt.Println(path)
-								if err := t.Merge(l, d, path); err != nil {
-									return err
+			if strings.Contains(testAndLocation, l) {
+				for _, t := range tests {
+					if strings.Contains(testAndLocation, t) {
+						for _, d := range deployments {
+							if strings.Contains(deployment, d) {
+								for _, tab := range tables {
+									if strings.Contains(file, tab.Name) {
+										fmt.Println(path)
+										if err := tab.Merge(l, t, timestamp, d, path); err != nil {
+											return err
+										}
+										break
+									}
 								}
 								break
 							}
@@ -140,7 +154,7 @@ func MergeResults(resultsDir, mergedResultsDir string, locations []string, deplo
 func main() {
 	tables := make([]*Table, 0)
 
-	var netperfMerge = func(location, deployment, path string, to io.Writer) error {
+	var netperfMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -148,12 +162,12 @@ func main() {
 		lines := strings.Split(string(data), "\n")
 		words := strings.Fields(lines[6])
 		tps := words[5]
-		_, err = to.Write([]byte(location + "," + deployment + "," + tps + "\n"))
+		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + tps + "\n"))
 		return err
 	}
 	tables = append(tables, NewTable("netperf", netperfMerge))
 
-	var iperf3Merge = func(location, deployment, path string, to io.Writer) error {
+	var iperf3Merge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -166,12 +180,12 @@ func main() {
 		retry := words[len(words)-1]
 		unit := words[len(words)-2]
 		bandwidth := words[len(words)-3]
-		_, err = to.Write([]byte(location + "," + deployment + "," + bandwidth + " " + unit + "," + retry + "\n"))
+		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + bandwidth + " " + unit + "," + retry + "\n"))
 		return err
 	}
 	tables = append(tables, NewTable("iperf3", iperf3Merge))
 
-	var redisMerge = func(location, deployment, path string, to io.Writer) error {
+	var redisMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -179,7 +193,7 @@ func main() {
 		lines := strings.SplitAfter(string(data), "\n")
 		for _, line := range lines {
 			if strings.TrimSpace(line) != "" {
-				if _, err = to.Write([]byte(location + "," + deployment + ",")); err != nil {
+				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + ",")); err != nil {
 					return err
 				}
 				if _, err = to.Write([]byte(line)); err != nil {
@@ -191,7 +205,7 @@ func main() {
 	}
 	tables = append(tables, NewTable("redis", redisMerge))
 
-	var changeRequestSizeMerge = func(location, deployment, path string, to io.Writer) error {
+	var changeRequestSizeMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -200,7 +214,7 @@ func main() {
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); trimed != "" {
 				words := strings.Fields(trimed)
-				if _, err = to.Write([]byte(location + "," + deployment)); err != nil {
+				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
 					return err
 				}
 				for _, word := range words {
@@ -220,17 +234,22 @@ func main() {
 	var changeRequestPeriodMerge = changeRequestSizeMerge
 	tables = append(tables, NewTable("changeRequestPeriod", changeRequestPeriodMerge))
 
-	var largeSampleRttMerge = func(location, deployment, path string, to io.Writer) error {
+	var largeSampleRttMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
 		}
 		lines := strings.SplitAfter(string(data), "\n")
 		lines = lines[1:] //ignore the first line of table head
-		for _, line := range lines {
+
+		rttNumLimit := 10000
+		for key, line := range lines {
+			if !(key < rttNumLimit) {
+				break
+			}
 			if trimed := strings.TrimSpace(line); trimed != "" {
 				words := strings.Fields(trimed)
-				if _, err = to.Write([]byte(location + "," + deployment)); err != nil {
+				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
 					return err
 				}
 				for _, word := range words {
@@ -247,7 +266,7 @@ func main() {
 	}
 	tables = append(tables, NewTable("largeSample_rtt", largeSampleRttMerge))
 
-	var largeSampleMerge = func(location, deployment, path string, to io.Writer) error {
+	var largeSampleMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -278,7 +297,7 @@ func main() {
 		start = strings.Index(line, ":") + 1
 		tps := strings.TrimSpace(line[start:])
 
-		if _, err = to.Write([]byte(location + "," + deployment)); err != nil {
+		if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
 			return err
 		}
 		if _, err = to.Write([]byte("," + numValidRtt)); err != nil {
@@ -306,12 +325,12 @@ func main() {
 	}
 	tables = append(tables, NewTable("largeSample", largeSampleMerge))
 
-	tables = append(tables, NewTable("largeSample_conn", func(location, deployment, path string, to io.Writer) error { return nil }))
+	tables = append(tables, NewTable("largeSample_conn", func(location, test, time, deployment, path string, to io.Writer) error { return nil }))
 
 	var waitResponseRttMerge = largeSampleRttMerge
 	tables = append(tables, NewTable("waitResponse_rtt", waitResponseRttMerge))
 
-	tables = append(tables, NewTable("waitResponse_conn", func(location, deployment, path string, to io.Writer) error { return nil }))
+	tables = append(tables, NewTable("waitResponse_conn", func(location, test, time, deployment, path string, to io.Writer) error { return nil }))
 
 	var waitResponseMerge = largeSampleMerge
 	tables = append(tables, NewTable("waitResponse", waitResponseMerge))
@@ -322,13 +341,17 @@ func main() {
 		"osvBridgeBr0",
 	}
 
+	tests := []string{
+		"basic", "ovs", "ovs2.5.0", "rtl8139", "unikernel",
+	}
+
 	locations := []string{
 		"Local", "Remote",
 	}
 
 	resultsDir := "results"
 	mergedResultsDir := resultsDir + "/" + "merged"
-	MergeResults(resultsDir, mergedResultsDir, locations, deployments, tables)
+	MergeResults(resultsDir, mergedResultsDir, locations, tests, deployments, tables)
 	fmt.Println("-----------------finished-----------------")
 	fmt.Println("Merged results stored in: " + mergedResultsDir)
 }
