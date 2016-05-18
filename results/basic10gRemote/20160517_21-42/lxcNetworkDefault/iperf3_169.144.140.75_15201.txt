@@ -1,0 +1,19 @@
+Connecting to host 169.144.140.75, port 15201
+[  4] local 169.144.140.74 port 50747 connected to 169.144.140.75 port 15201
+[ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
+[  4]   0.00-1.00   sec   318 MBytes  2.67 Gbits/sec  138   1.17 MBytes       
+[  4]   1.00-2.00   sec   328 MBytes  2.75 Gbits/sec    0   1.27 MBytes       
+[  4]   2.00-3.00   sec   361 MBytes  3.03 Gbits/sec    0   1.35 MBytes       
+[  4]   3.00-4.00   sec   366 MBytes  3.07 Gbits/sec    1   1.41 MBytes       
+[  4]   4.00-5.00   sec   364 MBytes  3.05 Gbits/sec    0   1.42 MBytes       
+[  4]   5.00-6.00   sec   366 MBytes  3.07 Gbits/sec    0   1.42 MBytes       
+[  4]   6.00-7.00   sec   350 MBytes  2.94 Gbits/sec    0   1.43 MBytes       
+[  4]   7.00-8.00   sec   326 MBytes  2.74 Gbits/sec    0   1.45 MBytes       
+[  4]   8.00-9.00   sec   341 MBytes  2.86 Gbits/sec    0   1.48 MBytes       
+[  4]   9.00-10.00  sec   362 MBytes  3.04 Gbits/sec    0   1.53 MBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bandwidth       Retr
+[  4]   0.00-10.00  sec  3.40 GBytes  2.92 Gbits/sec  139             sender
+[  4]   0.00-10.00  sec  3.40 GBytes  2.92 Gbits/sec                  receiver
+
+iperf Done.
