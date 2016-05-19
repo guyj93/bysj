@@ -1,0 +1,51 @@
+server: ecnshlx2052
+client: ecnshlx2034
+
+cpu: 4 * Intel(R) Xeon(R) X5660 @2.80GHz 
+
+10G Interface:
+```
+eyujugu@ecnshlx2052:~$ p1p1.222
+Settings for p1p1.222:
+	Supported ports: [ TP FIBRE ]
+	Supported link modes:   10000baseT/Full 
+	Supported pause frame use: No
+	Supports auto-negotiation: No
+	Advertised link modes:  10000baseT/Full 
+	Advertised pause frame use: No
+	Advertised auto-negotiation: No
+	Speed: 10000Mb/s
+	Duplex: Full
+	Port: Other
+	PHYAD: 0
+	Transceiver: external
+	Auto-negotiation: off
+Cannot get wake-on-lan settings: Operation not permitted
+	Link detected: yes
+```
+1G Interface:
+```
+eyujugu@ecnshlx2052:~$ ethtool em2
+Settings for em2:
+	Supported ports: [ TP ]
+	Supported link modes:   10baseT/Half 10baseT/Full 
+	                        100baseT/Half 100baseT/Full 
+	                        1000baseT/Full 
+	Supported pause frame use: No
+	Supports auto-negotiation: Yes
+	Advertised link modes:  10baseT/Half 10baseT/Full 
+	                        100baseT/Half 100baseT/Full 
+	                        1000baseT/Full 
+	Advertised pause frame use: No
+	Advertised auto-negotiation: Yes
+	Speed: 1000Mb/s
+	Duplex: Full
+	Port: Twisted Pair
+	PHYAD: 1
+	Transceiver: internal
+	Auto-negotiation: on
+	MDI-X: Unknown
+Cannot get wake-on-lan settings: Operation not permitted
+	Link detected: yes
+```
+
