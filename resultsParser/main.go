@@ -14,11 +14,12 @@ import (
 )
 
 type Table struct {
-	Name      string
-	MergeFunc func(location, test, time, deployment, path string, to io.Writer) error
-	fp        *os.File
-	bw        *bufio.Writer
-	lock      sync.Mutex
+	Name          string
+	MergeFunc     func(location, test, time, deployment, path string, to io.Writer) error
+	PrintHeadFunc func(to io.Writer) error
+	fp            *os.File
+	bw            *bufio.Writer
+	lock          sync.Mutex
 }
 
 func (t *Table) Merge(location, test, time, deployment, path string) error {
@@ -27,13 +28,21 @@ func (t *Table) Merge(location, test, time, deployment, path string) error {
 	return t.MergeFunc(location, test, time, deployment, path, t.bw)
 }
 
+func (t *Table) PrintHead() error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.PrintHeadFunc(t.bw)
+}
+
 func NewTable(
 	name string,
 	mergeFunc func(location, test, time, deployment, path string, to io.Writer) error,
+	printHeadFunc func(to io.Writer) error,
 ) *Table {
 	return &Table{
-		Name:      name,
-		MergeFunc: mergeFunc,
+		Name:          name,
+		MergeFunc:     mergeFunc,
+		PrintHeadFunc: printHeadFunc,
 	}
 }
 
@@ -104,6 +113,9 @@ func MergeResults(resultsDir, mergedResultsDir string, locations, tests, deploym
 		if _, err = t.bw.Write([]byte{0xEF, 0xBB, 0xBF}); err != nil { //write BOM of UTF8 for windows
 			panic(err)
 		}
+		if err = t.PrintHead(); err != nil {
+			panic(err)
+		}
 
 	}
 
@@ -153,7 +165,6 @@ func MergeResults(resultsDir, mergedResultsDir string, locations, tests, deploym
 
 func main() {
 	tables := make([]*Table, 0)
-
 	var netperfMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -165,7 +176,11 @@ func main() {
 		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + tps + "\n"))
 		return err
 	}
-	tables = append(tables, NewTable("netperf", netperfMerge))
+	var netperfHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,Tps\n"))
+		return err
+	}
+	tables = append(tables, NewTable("netperf", netperfMerge, netperfHead))
 
 	var iperf3Merge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
@@ -183,7 +198,11 @@ func main() {
 		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + bandwidth + " " + unit + "," + retry + "\n"))
 		return err
 	}
-	tables = append(tables, NewTable("iperf3", iperf3Merge))
+	var iperf3Head = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,Bandwidth,Retry\n"))
+		return err
+	}
+	tables = append(tables, NewTable("iperf3", iperf3Merge, iperf3Head))
 
 	var redisMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
@@ -203,7 +222,11 @@ func main() {
 		}
 		return nil
 	}
-	tables = append(tables, NewTable("redis", redisMerge))
+	var redisHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,Command,Tps\n"))
+		return err
+	}
+	tables = append(tables, NewTable("redis", redisMerge, redisHead))
 
 	var changeRequestSizeMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
@@ -229,10 +252,18 @@ func main() {
 		}
 		return nil
 	}
-	tables = append(tables, NewTable("changeRequestSize", changeRequestSizeMerge))
+	var changeRequestSizeHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,RequestSize,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		return err
+	}
+	tables = append(tables, NewTable("changeRequestSize", changeRequestSizeMerge, changeRequestSizeHead))
 
 	var changeRequestPeriodMerge = changeRequestSizeMerge
-	tables = append(tables, NewTable("changeRequestPeriod", changeRequestPeriodMerge))
+	var changeRequestPeriodHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,RequestPeriod,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		return err
+	}
+	tables = append(tables, NewTable("changeRequestPeriod", changeRequestPeriodMerge, changeRequestPeriodHead))
 
 	var largeSampleRttMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
@@ -264,7 +295,11 @@ func main() {
 		}
 		return nil
 	}
-	tables = append(tables, NewTable("largeSample_rtt", largeSampleRttMerge))
+	var largeSampleRttHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,ConnID,RttID,Rtt\n"))
+		return err
+	}
+	tables = append(tables, NewTable("largeSample_rtt", largeSampleRttMerge, largeSampleRttHead))
 
 	var largeSampleMerge = func(location, test, time, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
@@ -323,17 +358,31 @@ func main() {
 		}
 		return nil
 	}
-	tables = append(tables, NewTable("largeSample", largeSampleMerge))
-
-	tables = append(tables, NewTable("largeSample_conn", func(location, test, time, deployment, path string, to io.Writer) error { return nil }))
+	var largeSampleHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("Location,Test,Time,Deployment,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps\n"))
+		return err
+	}
+	tables = append(tables, NewTable("largeSample", largeSampleMerge, largeSampleHead))
+	var largeSampleConnMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+		return nil //do nothing
+	}
+	var largeSampleConnHead = func(to io.Writer) error {
+		_, err := to.Write([]byte("\n"))
+		return err
+	}
+	tables = append(tables, NewTable("largeSample_conn", largeSampleConnMerge, largeSampleConnHead))
 
 	var waitResponseRttMerge = largeSampleRttMerge
-	tables = append(tables, NewTable("waitResponse_rtt", waitResponseRttMerge))
+	var waitResponseRttHead = largeSampleRttHead
+	tables = append(tables, NewTable("waitResponse_rtt", waitResponseRttMerge, waitResponseRttHead))
 
-	tables = append(tables, NewTable("waitResponse_conn", func(location, test, time, deployment, path string, to io.Writer) error { return nil }))
+	var waitResponseConnMerge = largeSampleConnMerge
+	var waitResponseConnHead = largeSampleConnHead
+	tables = append(tables, NewTable("waitResponse_conn", waitResponseConnMerge, waitResponseConnHead))
 
 	var waitResponseMerge = largeSampleMerge
-	tables = append(tables, NewTable("waitResponse", waitResponseMerge))
+	var waitResponseHead = largeSampleHead
+	tables = append(tables, NewTable("waitResponse", waitResponseMerge, waitResponseHead))
 
 	deployments := []string{
 		"physical", "lxcNetworkDefault", "lxcBridgeBr0", "lxcBridgeOvsbr0",
@@ -346,7 +395,7 @@ func main() {
 	}
 
 	locations := []string{
-		"Local", "Remote",
+		"Local", "Remote", "10gRemote",
 	}
 
 	resultsDir := "results"

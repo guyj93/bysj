@@ -1,0 +1,8 @@
+True request size:  128  bytes.
+Response size from server:  256  bytes.
+Number of connects stop with error:  0
+Number of valid RTT:  100000
+min/avg/max/std of RTT: 190.304µs / 383.072µs / 5.779101ms / 61.544µs
+Request per second:  999.9927724122384
+Average transfer speed:  1.0239925989501321e+06 bps
+Average receive speed:  2.0479851979002643e+06 bps
