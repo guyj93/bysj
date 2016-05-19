@@ -3,29 +3,32 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type Table struct {
 	Name          string
-	MergeFunc     func(location, test, time, deployment, path string, to io.Writer) error
+	MergeFunc     func(location, test, timestamp, deployment, path string, to io.Writer) error
 	PrintHeadFunc func(to io.Writer) error
 	fp            *os.File
 	bw            *bufio.Writer
 	lock          sync.Mutex
 }
 
-func (t *Table) Merge(location, test, time, deployment, path string) error {
+func (t *Table) Merge(location, test, timestamp, deployment, path string) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
-	return t.MergeFunc(location, test, time, deployment, path, t.bw)
+	return t.MergeFunc(location, test, timestamp, deployment, path, t.bw)
 }
 
 func (t *Table) PrintHead() error {
@@ -36,7 +39,7 @@ func (t *Table) PrintHead() error {
 
 func NewTable(
 	name string,
-	mergeFunc func(location, test, time, deployment, path string, to io.Writer) error,
+	mergeFunc func(location, test, timestamp, deployment, path string, to io.Writer) error,
 	printHeadFunc func(to io.Writer) error,
 ) *Table {
 	return &Table{
@@ -165,7 +168,7 @@ func MergeResults(resultsDir, mergedResultsDir string, locations, tests, deploym
 
 func main() {
 	tables := make([]*Table, 0)
-	var netperfMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var netperfMerge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -173,16 +176,16 @@ func main() {
 		lines := strings.Split(string(data), "\n")
 		words := strings.Fields(lines[6])
 		tps := words[5]
-		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + tps + "\n"))
+		_, err = to.Write([]byte(location + "," + test + "," + timestamp + "," + deployment + "," + tps + "\n"))
 		return err
 	}
 	var netperfHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,Tps\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,Tps\n"))
 		return err
 	}
 	tables = append(tables, NewTable("netperf", netperfMerge, netperfHead))
 
-	var iperf3Merge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var iperf3Merge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -195,16 +198,30 @@ func main() {
 		retry := words[len(words)-1]
 		unit := words[len(words)-2]
 		bandwidth := words[len(words)-3]
-		_, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + "," + bandwidth + " " + unit + "," + retry + "\n"))
+		bandwidthFloat, err := strconv.ParseFloat(bandwidth, 64)
+		if err != nil {
+			return err
+		}
+		switch unit {
+		case "Gbits/sec":
+			bandwidthFloat *= 1000
+		case "Mbits/sec":
+			bandwidthFloat *= 1
+		case "Kbits/sec":
+			bandwidthFloat /= 1000
+		default:
+			return errors.New("Unrecognized unit: " + unit)
+		}
+		_, err = to.Write([]byte(location + "," + test + "," + timestamp + "," + deployment + "," + strconv.FormatFloat(bandwidthFloat, 'E', 4, 64) + "," + retry + "\n"))
 		return err
 	}
 	var iperf3Head = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,Bandwidth,Retry\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,Bandwidth,Retry\n"))
 		return err
 	}
 	tables = append(tables, NewTable("iperf3", iperf3Merge, iperf3Head))
 
-	var redisMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var redisMerge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -212,7 +229,7 @@ func main() {
 		lines := strings.SplitAfter(string(data), "\n")
 		for _, line := range lines {
 			if strings.TrimSpace(line) != "" {
-				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment + ",")); err != nil {
+				if _, err = to.Write([]byte(location + "," + test + "," + timestamp + "," + deployment + ",")); err != nil {
 					return err
 				}
 				if _, err = to.Write([]byte(line)); err != nil {
@@ -223,12 +240,12 @@ func main() {
 		return nil
 	}
 	var redisHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,Command,Tps\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,Command,Tps\n"))
 		return err
 	}
 	tables = append(tables, NewTable("redis", redisMerge, redisHead))
 
-	var changeRequestSizeMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var changeRequestSizeMerge = func(location, test, timeStamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -237,12 +254,18 @@ func main() {
 		for _, line := range lines {
 			if trimed := strings.TrimSpace(line); trimed != "" {
 				words := strings.Fields(trimed)
-				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
+				if _, err = to.Write([]byte(location + "," + test + "," + timeStamp + "," + deployment)); err != nil {
 					return err
 				}
 				for _, word := range words {
-					if _, err = to.Write([]byte("," + word)); err != nil {
-						return err
+					if du, err := time.ParseDuration(word); err != nil || word == "0" {
+						if _, err = to.Write([]byte("," + word)); err != nil {
+							return err
+						}
+					} else { //is a duration
+						if _, err = to.Write([]byte("," + strconv.FormatFloat(float64(du), 'E', -1, 64))); err != nil {
+							return err
+						}
 					}
 				}
 				if _, err = to.Write([]byte("\n")); err != nil {
@@ -253,19 +276,19 @@ func main() {
 		return nil
 	}
 	var changeRequestSizeHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,RequestSize,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestSize,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
 		return err
 	}
 	tables = append(tables, NewTable("changeRequestSize", changeRequestSizeMerge, changeRequestSizeHead))
 
 	var changeRequestPeriodMerge = changeRequestSizeMerge
 	var changeRequestPeriodHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,RequestPeriod,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestPeriod,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
 		return err
 	}
 	tables = append(tables, NewTable("changeRequestPeriod", changeRequestPeriodMerge, changeRequestPeriodHead))
 
-	var largeSampleRttMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var largeSampleRttMerge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -274,19 +297,30 @@ func main() {
 		lines = lines[1:] //ignore the first line of table head
 
 		rttNumLimit := 10000
+		var du time.Duration
 		for key, line := range lines {
 			if !(key < rttNumLimit) {
 				break
 			}
 			if trimed := strings.TrimSpace(line); trimed != "" {
 				words := strings.Fields(trimed)
-				if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
+				if len(words) != 3 {
+					return errors.New("File format error!")
+				}
+				if du, err = time.ParseDuration(words[2]); err != nil {
 					return err
 				}
-				for _, word := range words {
-					if _, err = to.Write([]byte("," + word)); err != nil {
-						return err
-					}
+				//conn id
+				if _, err = to.Write([]byte(location + "," + test + "," + timestamp + "," + deployment)); err != nil {
+					return err
+				}
+				//rtt id
+				if _, err = to.Write([]byte("," + words[0] + "," + words[1])); err != nil {
+					return err
+				}
+				//rtt
+				if _, err = to.Write([]byte("," + strconv.FormatFloat(float64(du), 'E', -1, 64))); err != nil {
+					return err
 				}
 				if _, err = to.Write([]byte("\n")); err != nil {
 					return err
@@ -296,12 +330,12 @@ func main() {
 		return nil
 	}
 	var largeSampleRttHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,ConnID,RttID,Rtt\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,ConnID,RttID,Rtt\n"))
 		return err
 	}
 	tables = append(tables, NewTable("largeSample_rtt", largeSampleRttMerge, largeSampleRttHead))
 
-	var largeSampleMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var largeSampleMerge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
@@ -316,23 +350,46 @@ func main() {
 		line = line[start:]
 		stop := strings.Index(line, "/")
 		minRtt := strings.TrimSpace(line[:stop])
+		du, err := time.ParseDuration(minRtt)
+		if err != nil {
+			return err
+		}
+		minRtt = strconv.FormatFloat(float64(du), 'E', -1, 64)
+
 		start = stop + 1
 		line = line[start:]
 		stop = strings.Index(line, "/")
 		avgRtt := strings.TrimSpace(line[:stop])
+		du, err = time.ParseDuration(avgRtt)
+		if err != nil {
+			return err
+		}
+		avgRtt = strconv.FormatFloat(float64(du), 'E', -1, 64)
+
 		start = stop + 1
 		line = line[start:]
 		stop = strings.Index(line, "/")
 		maxRtt := strings.TrimSpace(line[:stop])
+		du, err = time.ParseDuration(maxRtt)
+		if err != nil {
+			return err
+		}
+		maxRtt = strconv.FormatFloat(float64(du), 'E', -1, 64)
+
 		start = stop + 1
 		line = line[start:]
 		stdRtt := strings.TrimSpace(line)
+		du, err = time.ParseDuration(stdRtt)
+		if err != nil {
+			return err
+		}
+		stdRtt = strconv.FormatFloat(float64(du), 'E', -1, 64)
 
 		line = lines[5]
 		start = strings.Index(line, ":") + 1
 		tps := strings.TrimSpace(line[start:])
 
-		if _, err = to.Write([]byte(location + "," + test + "," + time + "," + deployment)); err != nil {
+		if _, err = to.Write([]byte(location + "," + test + "," + timestamp + "," + deployment)); err != nil {
 			return err
 		}
 		if _, err = to.Write([]byte("," + numValidRtt)); err != nil {
@@ -359,11 +416,11 @@ func main() {
 		return nil
 	}
 	var largeSampleHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,Time,Deployment,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps\n"))
 		return err
 	}
 	tables = append(tables, NewTable("largeSample", largeSampleMerge, largeSampleHead))
-	var largeSampleConnMerge = func(location, test, time, deployment, path string, to io.Writer) error {
+	var largeSampleConnMerge = func(location, test, timestamp, deployment, path string, to io.Writer) error {
 		return nil //do nothing
 	}
 	var largeSampleConnHead = func(to io.Writer) error {
