@@ -216,7 +216,7 @@ func main() {
 		return err
 	}
 	var iperf3Head = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,Bandwidth,Retry\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,Bandwidth(Mbits/sec),Retry\n"))
 		return err
 	}
 	tables = append(tables, NewTable("iperf3", iperf3Merge, iperf3Head))
@@ -276,14 +276,14 @@ func main() {
 		return nil
 	}
 	var changeRequestSizeHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestSize,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestSize(byte),NumValidRtt,MinRtt(ns),AvgRtt(ns),MaxRtt(ns),StdRtt(ns),Tps,TxBandwidth(bps),RxBandwidth(bps)\n"))
 		return err
 	}
 	tables = append(tables, NewTable("changeRequestSize", changeRequestSizeMerge, changeRequestSizeHead))
 
 	var changeRequestPeriodMerge = changeRequestSizeMerge
 	var changeRequestPeriodHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestPeriod,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps,TxBandwidth,RxBandwidth\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,RequestPeriod(ns),NumValidRtt(ns),MinRtt(ns),AvgRtt(ns),MaxRtt(ns),StdRtt(ns),Tps,TxBandwidth(bps),RxBandwidth(bps)\n"))
 		return err
 	}
 	tables = append(tables, NewTable("changeRequestPeriod", changeRequestPeriodMerge, changeRequestPeriodHead))
@@ -330,7 +330,7 @@ func main() {
 		return nil
 	}
 	var largeSampleRttHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,ConnID,RttID,Rtt\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,ConnID,RttID,Rtt(ns)\n"))
 		return err
 	}
 	tables = append(tables, NewTable("largeSample_rtt", largeSampleRttMerge, largeSampleRttHead))
@@ -416,7 +416,7 @@ func main() {
 		return nil
 	}
 	var largeSampleHead = func(to io.Writer) error {
-		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,NumValidRtt,MinRtt,AvgRtt,MaxRtt,StdRtt,Tps\n"))
+		_, err := to.Write([]byte("Location,Test,timestamp,Deployment,NumValidRtt(ns),MinRtt(ns),AvgRtt(ns),MaxRtt(ns),StdRtt(ns),Tps\n"))
 		return err
 	}
 	tables = append(tables, NewTable("largeSample", largeSampleMerge, largeSampleHead))
