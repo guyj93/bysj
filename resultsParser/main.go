@@ -296,7 +296,7 @@ func main() {
 		lines := strings.SplitAfter(string(data), "\n")
 		lines = lines[1:] //ignore the first line of table head
 
-		rttNumLimit := 10000
+		rttNumLimit := 20000
 		var du time.Duration
 		for key, line := range lines {
 			if !(key < rttNumLimit) {
